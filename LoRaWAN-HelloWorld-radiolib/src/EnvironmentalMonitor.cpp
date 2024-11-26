@@ -29,11 +29,8 @@ Serial.prints - we promise the final result isn't that many lines.
 
 RTC_DATA_ATTR uint16_t bootCount = 0;
 
-#include "DS18B20.h"
 #include "GPS.h"
-#include "GravityTDS1.h"
 #include "LoRaWAN.hpp"
-#include "PH4502C.h"
 
 static GAIT::LoRaWAN<RADIOLIB_LORA_MODULE> loRaWAN(RADIOLIB_LORA_REGION,
                                                    RADIOLIB_LORAWAN_JOIN_EUI,
@@ -47,12 +44,6 @@ static GAIT::LoRaWAN<RADIOLIB_LORA_MODULE> loRaWAN(RADIOLIB_LORA_REGION,
                                                    RADIOLIB_LORA_MODULE_BITMAP);
 
 static GAIT::GPS gps(GPS_SERIAL_PORT, GPS_SERIAL_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN);
-
-static GAIT::DS18B20 ds18B20;
-
-static GAIT::PH4502C ph4502c(PH4502C_PH_PIN, PH4502C_TEMPERATURE_PIN);
-
-static GAIT::GravityTDS gravityDTS(TDS_SENSOR_PIN, TDS_SENSOR_VCC, TDS_SENSOR_ADC_RESOLUTION);
 
 // abbreviated version from the Arduino-ESP32 package, see
 // https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/deepsleep.html
@@ -121,25 +112,7 @@ void setup() {
                                 std::to_string(gps.getAltitude()) + "," + std::to_string(gps.getHdop());
             }
             break;
-        case 1:
-            // Temperature
-            fPort = currentSensor + 1;
-            uplinkPayload = std::to_string(ds18B20.getTemperature());
-            break;
-        case 2:
-            // PH-value
-            ph4502c.setup();
-            uplinkPayload = std::to_string(ph4502c.getPHLevel());
-            fPort = currentSensor + 1;
-            break;
-        case 3:
-            // DTS value
-            gravityDTS.setup();
-            uplinkPayload = std::to_string(gravityDTS.getValue(22)); // 22 Temperature
-            fPort = currentSensor + 1;
-            break;
     }
-
     loRaWAN.setUplinkPayload(fPort, uplinkPayload);
 }
 
