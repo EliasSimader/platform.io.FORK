@@ -98,27 +98,21 @@ void setup() {
     std::string uplinkPayload = RADIOLIB_LORAWAN_PAYLOAD;
     uint8_t fPort = 221;
 
-#define SENSOR_COUNT 4
-
-    uint8_t currentSensor = (bootCount - 1) % SENSOR_COUNT; // Starting at zero (0)
-
-    switch (currentSensor) {
-        case 0:
-            // Position
-            gps.setup();
-            if (gps.isValid()) {
-                fPort = currentSensor + 1; // 1 is location
-                uplinkPayload = std::to_string(gps.getLatitude()) + "," + std::to_string(gps.getLongitude()) + "," +
-                                std::to_string(gps.getAltitude()) + "," + std::to_string(gps.getHdop());
-            }
-            break;
+    // GPS
+    gps.setup();
+    if (gps.isValid()) {
+        fPort = 1; // 1 is location
+        uplinkPayload = std::to_string(gps.getLatitude()) + "," + std::to_string(gps.getLongitude()) + "," +
+        std::to_string(gps.getAltitude()) + "," + std::to_string(gps.getHdop());
     }
+    else {
+        Serial.println(F("[ERROR] GPS-Daten ungültig."));
+        uplinkPayload = "GPS_ERROR"; 
+    }
+        
     loRaWAN.setUplinkPayload(fPort, uplinkPayload);
 }
 
 void loop() {
     loRaWAN.loop();
 }
-
-// Does it respond to a UBX-MON-VER request?
-// uint8_t ubx_mon_ver[] = { 0xB5,0x62,0x0A,0x04,0x00,0x00,0x0E,0x34 };
