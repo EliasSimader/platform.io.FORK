@@ -31,6 +31,8 @@ RTC_DATA_ATTR uint16_t bootCount = 0;
 
 #include "GPS.h"
 #include "LoRaWAN.hpp"
+#include "SoilMoistureSensor.h"
+#include "PeristalticPump.h"
 
 static GAIT::LoRaWAN<RADIOLIB_LORA_MODULE> loRaWAN(RADIOLIB_LORA_REGION,
                                                    RADIOLIB_LORAWAN_JOIN_EUI,
@@ -44,6 +46,9 @@ static GAIT::LoRaWAN<RADIOLIB_LORA_MODULE> loRaWAN(RADIOLIB_LORA_REGION,
                                                    RADIOLIB_LORA_MODULE_BITMAP);
 
 static GAIT::GPS gps(GPS_SERIAL_PORT, GPS_SERIAL_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN);
+
+SoilMoistureSensor soilSensor(32);
+PeristalticPump pump(22);
 
 // abbreviated version from the Arduino-ESP32 package, see
 // https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/deepsleep.html
@@ -98,18 +103,45 @@ void setup() {
     std::string uplinkPayload = RADIOLIB_LORAWAN_PAYLOAD;
     uint8_t fPort = 221;
 
-    // GPS
+    //LoRaWan TTN Payload Send
+    //GPS
     gps.setup();
     if (gps.isValid()) {
-        fPort = 1; // 1 is location
+        fPort = 1;          //1 is location
         uplinkPayload = std::to_string(gps.getLatitude()) + "," + std::to_string(gps.getLongitude()) + "," +
         std::to_string(gps.getAltitude()) + "," + std::to_string(gps.getHdop());
     }
     else {
+        fPort = 99;         //99 are errors
         Serial.println(F("[ERROR] GPS-Daten ungültig."));
         uplinkPayload = "GPS_ERROR"; 
     }
-        
+
+    pump.initialize();
+
+    // //Feuchtigkeitssensor
+    soilSensor.begin();
+    if(soilSensor.readValue() >= 0) {
+        fPort=2;            // 2 is moisture
+        float sensorValue = soilSensor.readValue();
+        float voltage = sensorValue * (3.0 / 4095.0);
+        float moisture = map(sensorValue, 0, 4095, 100, 0);
+
+        Serial.print("Derzeitige Spannung: ");
+        Serial.println(voltage);
+
+        Serial.print("Derzeitiger Feuchtigkeitswert: ");
+        Serial.println(moisture);
+
+        uplinkPayload = " Voltage: " + std::to_string(voltage) + ", " + "Feuchtigkeit: " + std::to_string(moisture);
+        pump.run(5000);
+    }
+    else{
+        Serial.print("[ERROR] Feuchtigkeitssensor-Daten ungültig.");
+        fPort = 99;         //99 are errors
+        uplinkPayload = " FEUCHTIGKEIT_ERROR";
+    }
+
     loRaWAN.setUplinkPayload(fPort, uplinkPayload);
 }
 

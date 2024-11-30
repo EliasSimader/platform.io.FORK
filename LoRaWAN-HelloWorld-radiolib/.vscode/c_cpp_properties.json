@@ -512,7 +512,7 @@
                 "RADIOLIB_LORAWAN_DEV_EUI=0x70B3D57ED006B307",
                 "RADIOLIB_LORAWAN_APP_KEY=0x14, 0x70, 0xFC, 0x7A, 0xD8, 0x20, 0x9E, 0xFF, 0x48, 0xA9, 0xC7, 0xCD, 0xD6, 0x12, 0x4C, 0xF8",
                 "RADIOLIB_LORAWAN_NWK_KEY=0x95, 0xBF, 0x84, 0x5A, 0xAA, 0x41, 0x6C, 0x96, 0xC8, 0x3B, 0xA8, 0x3C, 0x94, 0x81, 0x7C, 0x36",
-                "RADIOLIB_LORAWAN_PAYLOAD=\"RadioLib v1.1.0 experiment device: Waiting for GPS\"",
+                "RADIOLIB_LORAWAN_PAYLOAD=\"RadioLib v1.1.0 System Check OK\"",
                 "GPS_SERIAL_PORT=2",
                 "GPS_SERIAL_BAUD_RATE=9600",
                 "GPS_SERIAL_CONFIG=SERIAL_8N1",
