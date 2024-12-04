@@ -8,9 +8,7 @@ class SoilMoistureSensor {
         int sensorPin;
     public:
         SoilMoistureSensor(int sensorPin);
-        
         void begin();
-
         int readValue();
 };
 

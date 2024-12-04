@@ -1,5 +1,4 @@
 /*
-
 This demonstrates how to save the join information in to permanent memory
 so that if the power fails, batteries run out or are changed, the rejoin
 is more efficient & happens sooner due to the way that LoRaWAN secures
@@ -103,7 +102,6 @@ void setup() {
     std::string uplinkPayload = RADIOLIB_LORAWAN_PAYLOAD;
     uint8_t fPort = 221;
 
-    //LoRaWan TTN Payload Send
     //GPS
     gps.setup();
     if (gps.isValid()) {
@@ -112,14 +110,15 @@ void setup() {
         std::to_string(gps.getAltitude()) + "," + std::to_string(gps.getHdop());
     }
     else {
-        fPort = 99;         //99 are errors
+        fPort = 223;         //223 are errors (read in the upload formatter)
         Serial.println(F("[ERROR] GPS-Daten ungültig."));
         uplinkPayload = "GPS_ERROR"; 
     }
 
+    //Pumpe initialisieren
     pump.initialize();
 
-    // //Feuchtigkeitssensor
+    // Feuchtigkeitssensor
     soilSensor.begin();
     if(soilSensor.readValue() >= 0) {
         fPort=2;            // 2 is moisture
@@ -127,22 +126,33 @@ void setup() {
         float voltage = sensorValue * (3.0 / 4095.0);
         float moisture = map(sensorValue, 0, 4095, 100, 0);
 
+        //Debug der Werte
         Serial.print("Derzeitige Spannung: ");
         Serial.println(voltage);
-
         Serial.print("Derzeitiger Feuchtigkeitswert: ");
         Serial.println(moisture);
 
-        uplinkPayload = " Voltage: " + std::to_string(voltage) + ", " + "Feuchtigkeit: " + std::to_string(moisture);
-        pump.run(5000);
-    }
-    else{
-        Serial.print("[ERROR] Feuchtigkeitssensor-Daten ungültig.");
-        fPort = 99;         //99 are errors
-        uplinkPayload = " FEUCHTIGKEIT_ERROR";
+        // Payload zusammensetzen
+        std::string moisturePayload = "F:" + std::to_string(moisture) +"%, " + "V:" + std::to_string(voltage) + "V";
+
+        // Wenn Feuchtigkeit unter 50% -> Pumpe wird aktiviert
+        if(moisture < 50) {
+            pump.run(5000);
+            Serial.println("Pumpe wurde aktiviert");
+            moisturePayload = "P1, " + moisturePayload;  // P1 = Pump ON
+        } else {
+            moisturePayload = "P0, " + moisturePayload;  // P0 = Pump OFF
+        }
+
+        uplinkPayload = moisturePayload;
+    } else {
+        Serial.println("[ERROR] Feuchtigkeitssensor-Daten ungültig.");
+        fPort = 223;         //223 are errors
+        uplinkPayload = "FEUCHTIGKEITSSENSOR_ERROR";
     }
 
     loRaWAN.setUplinkPayload(fPort, uplinkPayload);
+    Serial.println("Payload gesetzt, warte auf Übertragung...");
 }
 
 void loop() {
