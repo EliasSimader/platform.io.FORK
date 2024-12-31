@@ -46,7 +46,10 @@ static GAIT::LoRaWAN<RADIOLIB_LORA_MODULE> loRaWAN(RADIOLIB_LORA_REGION,
 
 static GAIT::GPS gps(GPS_SERIAL_PORT, GPS_SERIAL_BAUD_RATE, GPS_SERIAL_CONFIG, GPS_SERIAL_RX_PIN, GPS_SERIAL_TX_PIN);
 
-SoilMoistureSensor soilSensor(32);
+SoilMoistureSensor soilSensor1(32);
+SoilMoistureSensor soilSensor2(33);
+SoilMoistureSensor soilSensor3(34);
+SoilMoistureSensor soilSensor4(35);
 PeristalticPump pump(22);
 
 // abbreviated version from the Arduino-ESP32 package, see
@@ -118,25 +121,40 @@ void setup() {
     //Pumpe initialisieren
     pump.initialize();
 
-    // Feuchtigkeitssensor
-    soilSensor.begin();
-    if(soilSensor.readValue() >= 0) {
-        fPort=2;            // 2 is moisture
-        float sensorValue = soilSensor.readValue();
-        float voltage = sensorValue * (3.0 / 4095.0);
-        float moisture = map(sensorValue, 0, 4095, 100, 0);
+    // Feuchtigkeitssensoren
+    soilSensor1.begin();
+    soilSensor2.begin();
+    soilSensor3.begin();
+    soilSensor4.begin();
 
-        //Debug der Werte
-        Serial.print("Derzeitige Spannung: ");
-        Serial.println(voltage);
-        Serial.print("Derzeitiger Feuchtigkeitswert: ");
-        Serial.println(moisture);
+    if(soilSensor1.readValue() >= 0 || soilSensor2.readValue() >= 0 || soilSensor3.readValue() >= 0 || soilSensor4.readValue() >= 0) {
+        fPort=2;    // Port 2 is für die Feuchtigkeit
+
+        // Sensorwerte
+        float sensorValue1 = soilSensor1.readValue();
+        float sensorValue2 = soilSensor2.readValue();
+        float sensorValue3 = soilSensor3.readValue();
+        float sensorValue4 = soilSensor4.readValue();
+
+        // Feuchtigkeitswerte
+        float moisture1 = map(sensorValue1, 0, 4095, 100, 0);
+        float moisture2 = map(sensorValue2, 0, 4095, 100, 0);
+        float moisture3 = map(sensorValue3, 0, 4095, 100, 0);
+        float moisture4 = map(sensorValue4, 0, 4095, 100, 0);
+
+        // Durchschnitt der Feuchtigkeitswerte
+        float averageMoisture = (moisture1 + moisture2 + moisture3 + moisture4) / 4;
 
         // Payload zusammensetzen
-        std::string moisturePayload = "F:" + std::to_string(moisture) +"%, " + "V:" + std::to_string(voltage) + "V";
+        std::string moisturePayload =   "F1:" + std::to_string((int)moisture1) + 
+                                        "F2:" + std::to_string((int)moisture2) + 
+                                        "F3:" + std::to_string((int)moisture3) + 
+                                        "F4:" + std::to_string((int)moisture4) + 
+                                        "AVGM:" + std::to_string((int)averageMoisture)
+                                        ;
 
-        // Wenn Feuchtigkeit unter 50% -> Pumpe wird aktiviert
-        if(moisture < 50) {
+        // Wenn Feuchtigkeit unter 50% -> Pumpenkreislauf wird aktiviert -> Durchlauflogik mit Ventile muss noch eingebaut werden
+        if(moisture1 < 50 || moisture2 < 50 || moisture3 < 50 || moisture4 < 50) {
             pump.run(5000);
             Serial.println("Pumpe wurde aktiviert");
             moisturePayload = "P1, " + moisturePayload;  // P1 = Pump ON
@@ -144,6 +162,7 @@ void setup() {
             moisturePayload = "P0, " + moisturePayload;  // P0 = Pump OFF
         }
 
+        //Serial.println("Payload length: " + String(moisturePayload.length()));
         uplinkPayload = moisturePayload;
     } else {
         Serial.println("[ERROR] Feuchtigkeitssensor-Daten ungültig.");
