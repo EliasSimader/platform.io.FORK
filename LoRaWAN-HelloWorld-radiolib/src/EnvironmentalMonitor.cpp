@@ -32,6 +32,7 @@ RTC_DATA_ATTR uint16_t bootCount = 0;
 #include "LoRaWAN.hpp"
 #include "SoilMoistureSensor.h"
 #include "PeristalticPump.h"
+#include "Ventile.h"
 
 static GAIT::LoRaWAN<RADIOLIB_LORA_MODULE> loRaWAN(RADIOLIB_LORA_REGION,
                                                    RADIOLIB_LORAWAN_JOIN_EUI,
@@ -51,6 +52,10 @@ SoilMoistureSensor soilSensor2(33);
 SoilMoistureSensor soilSensor3(34);
 SoilMoistureSensor soilSensor4(35);
 PeristalticPump pump(22);
+Ventile ventil1(23);
+Ventile ventil2(24);
+Ventile ventil3(25);
+Ventile ventil4(26);
 
 // abbreviated version from the Arduino-ESP32 package, see
 // https://espressif-docs.readthedocs-hosted.com/projects/arduino-esp32/en/latest/api/deepsleep.html
@@ -121,6 +126,12 @@ void setup() {
     //Pumpe initialisieren
     pump.initialize();
 
+    //Ventile initialisieren
+    ventil1.initialize();
+    ventil2.initialize();
+    ventil3.initialize();
+    ventil4.initialize();
+
     // Feuchtigkeitssensoren
     soilSensor1.begin();
     soilSensor2.begin();
@@ -153,10 +164,30 @@ void setup() {
                                         "AVGM:" + std::to_string((int)averageMoisture)
                                         ;
 
-        // Wenn Feuchtigkeit unter 50% -> Pumpenkreislauf wird aktiviert -> Durchlauflogik mit Ventile muss noch eingebaut werden
+        // Wenn Feuchtigkeit unter 50% -> Pumpenkreislauf wird aktiviert
         if(moisture1 < 50 || moisture2 < 50 || moisture3 < 50 || moisture4 < 50) {
             pump.run(5000);
             Serial.println("Pumpe wurde aktiviert");
+
+            // Ventile öffnen sich, wenn Feuchtigkeit unter 50% fällt
+            if (moisture1 < 50) {
+                ventil1.open(5000); 
+                Serial.println("Ventil 1 geöffnet");
+            }
+            if (moisture2 < 50) {
+                ventil2.open(5000);
+                Serial.println("Ventil 2 geöffnet");
+            }
+            if (moisture3 < 50) {
+                ventil3.open(5000);
+                Serial.println("Ventil 3 geöffnet");
+            }
+            if (moisture4 < 50) {
+                ventil4.open(5000);
+                Serial.println("Ventil 4 geöffnet");
+            }
+
+            Serial.println("Der Kreislauf wurde für 5 Sekunden bewässert!");
             moisturePayload = "P1, " + moisturePayload;  // P1 = Pump ON
         } else {
             moisturePayload = "P0, " + moisturePayload;  // P0 = Pump OFF
