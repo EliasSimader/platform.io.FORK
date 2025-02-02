@@ -52,8 +52,8 @@ SoilMoistureSensor soilSensor2(33);
 SoilMoistureSensor soilSensor3(34);
 SoilMoistureSensor soilSensor4(35);
 PeristalticPump pump(22);
-Ventile ventil1(23);
-Ventile ventil2(24);
+Ventile ventil1(21);
+Ventile ventil2(22);
 Ventile ventil3(25);
 Ventile ventil4(26);
 
